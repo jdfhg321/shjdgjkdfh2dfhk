@@ -46,13 +46,18 @@ body {
     font-size: 36px;
     margin-right: 15px;
 }
-#nickname {
+#nickname div:nth-child(2),
+#username div:nth-child(2),
+#id div:nth-child(2) {
+    margin-left: 10px;
+}
+#nickname div:nth-child(2) {
     color: #4998ff;
 }
-#username {
+#username div:nth-child(2) {
     color: #00ffe6;
 }
-#id {
+#id div:nth-child(2) {
     color: #00ff9d;
 }
 .balance-container {
@@ -124,37 +129,36 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 const tg = window.Telegram.WebApp;
-tg.ready();
 
 async function loadProfile() {
     console.log('Начинаем загрузку профиля');
-    
-    // Сначала пытаемся получить параметры из URL
+
+    // Получаем параметры из URL
     const urlParams = new URLSearchParams(window.location.search);
     let userId = urlParams.get('id');
     let nickname = urlParams.get('nickname');
     let balance = urlParams.get('balance');
-    
+
     console.log('Параметры из URL:', { userId, nickname, balance });
-    
-    // Если параметры не переданы, пробуем получить из tg.initDataUnsafe
+
+    // Если параметры не переданы, берем из tg.initDataUnsafe
     if (!userId) {
         console.log('Параметры из URL не получены, пробуем tg.initDataUnsafe');
         const user = tg.initDataUnsafe?.user;
         console.log('Данные из tg.initDataUnsafe:', user);
-        
+
         if (user) {
             userId = user.id;
             nickname = user.first_name || user.username || 'Нет никнейма';
-            
-            // Если ID есть, а баланса нет, загружаем баланс из базы
+
+            // Загружаем баланс из базы, если его нет
             try {
                 const response = await supabaseClient
                     .from('users')
                     .select('balance')
                     .eq('id', userId)
                     .single();
-                
+
                 if (!response.error && response.data) {
                     balance = response.data.balance || 0;
                 } else {
@@ -165,8 +169,8 @@ async function loadProfile() {
                 balance = 0;
             }
         } else {
-            // Нет данных ниоткуда - показываем дефолт
-            console.log('Данные ниоткуда не получены');
+            // Нет данных ниоткуда
+            console.log('Нет данных ниоткуда');
             document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
             document.querySelector('#username div:nth-child(2)').textContent = '';
             document.querySelector('#id div:nth-child(2)').textContent = '';
@@ -174,18 +178,18 @@ async function loadProfile() {
             return;
         }
     }
-    
-    console.log('Итоговые данные для отображения:', { userId, nickname, balance });
-    
-    // Отображаем полученные данные
+
+    console.log('Итоговые данные:', { userId, nickname, balance });
+
+    // Обновляем DOM
     document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
     document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
     document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
     document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
 }
 
-// Запускаем функцию
-loadProfile();
+// Запускаем после полной загрузки DOM
+window.addEventListener('DOMContentLoaded', loadProfile);
 
 // Запрет зума
 window.addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
