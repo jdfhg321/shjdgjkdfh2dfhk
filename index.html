@@ -127,32 +127,46 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 
 async function loadProfile() {
+    console.log('Начинаем загрузку профиля');
+    
     // Сначала пытаемся получить параметры из URL
     const urlParams = new URLSearchParams(window.location.search);
     let userId = urlParams.get('id');
     let nickname = urlParams.get('nickname');
     let balance = urlParams.get('balance');
     
+    console.log('Параметры из URL:', { userId, nickname, balance });
+    
     // Если параметры не переданы, пробуем получить из tg.initDataUnsafe
     if (!userId) {
+        console.log('Параметры из URL не получены, пробуем tg.initDataUnsafe');
         const user = tg.initDataUnsafe?.user;
+        console.log('Данные из tg.initDataUnsafe:', user);
+        
         if (user) {
             userId = user.id;
             nickname = user.first_name || user.username || 'Нет никнейма';
-            // Если ID есть, а баланса нет, загружаем баланс из базы
-            const response = await supabaseClient
-                .from('users')
-                .select('balance')
-                .eq('id', userId)
-                .single();
             
-            if (!response.error && response.data) {
-                balance = response.data.balance || 0;
-            } else {
+            // Если ID есть, а баланса нет, загружаем баланс из базы
+            try {
+                const response = await supabaseClient
+                    .from('users')
+                    .select('balance')
+                    .eq('id', userId)
+                    .single();
+                
+                if (!response.error && response.data) {
+                    balance = response.data.balance || 0;
+                } else {
+                    balance = 0;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки баланса:', error);
                 balance = 0;
             }
         } else {
             // Нет данных ниоткуда - показываем дефолт
+            console.log('Данные ниоткуда не получены');
             document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
             document.querySelector('#username div:nth-child(2)').textContent = '';
             document.querySelector('#id div:nth-child(2)').textContent = '';
@@ -160,6 +174,8 @@ async function loadProfile() {
             return;
         }
     }
+    
+    console.log('Итоговые данные для отображения:', { userId, nickname, balance });
     
     // Отображаем полученные данные
     document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
