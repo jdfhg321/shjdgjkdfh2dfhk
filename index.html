@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Профиль с балансом денег</title>
 <style>
+/* Ваш CSS, как ранее */
 body {
     margin: 0;
     padding: 20px;
@@ -123,79 +124,73 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-    const SUPABASE_URL = 'https://vpfomvsrkxykobiziqmc.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZm9tdnNya3h5a29iaXppcW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NzQ1ODUsImV4cCI6MjA4NDM1MDU4NX0.7bey1hQpATp9e6jxAf7qMUwM9blpTsg_hyDT94qoQLk';
-    
-    const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tg = window.Telegram.WebApp;
-    
-    async function loadProfile() {
-        console.log('Начинаем загрузку профиля');
-    
-        // Получаем параметры из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        let userId = urlParams.get('id');
-        let nickname = urlParams.get('nickname');
-        let balance = urlParams.get('balance');
-    
-        console.log('Параметры из URL:', { userId, nickname, balance });
-    
-        // Если параметры не переданы, берем из tg.initDataUnsafe
-        if (!userId) {
-            console.log('Параметры из URL не получены, пробуем tg.initDataUnsafe');
-            const user = tg.initDataUnsafe?.user;
-            console.log('Данные из tg.initDataUnsafe:', user);
-    
-            if (user) {
-                userId = user.id;
-                nickname = user.first_name || user.username || 'Нет никнейма';
-    
-                // Загружаем баланс из базы, если его нет
-                try {
-                    const response = await supabaseClient
-                        .from('users')
-                        .select('balance')
-                        .eq('id', userId)
-                        .single();
-    
-                    console.log('Ответ базы:', response);
-    
-                    if (!response.error && response.data) {
-                        balance = response.data.balance || 0;
-                    } else {
-                        balance = 0;
-                    }
-                } catch (error) {
-                    console.error('Ошибка загрузки баланса:', error);
+const SUPABASE_URL = 'https://vpfomvsrkxykobiziqmc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZm9tdnNya3h5a29iaXppcW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NzQ1ODUsImV4cCI6MjA4NDM1MDU4NX0.7bey1hQpATp9e6jxAf7qMUwM9blpTsg_hyDT94qoQLk';
+
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+const tg = window.Telegram.WebApp;
+
+async function loadProfile() {
+    console.log('Начинаем загрузку профиля');
+    // Получение параметров из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get('id');
+    let nickname = urlParams.get('nickname');
+    let balance = urlParams.get('balance');
+
+    console.log('Параметры из URL:', { userId, nickname, balance });
+
+    // Если нет userId, берем из tg.initDataUnsafe
+    if (!userId) {
+        console.log('Параметры из URL не получены, проверяем tg.initDataUnsafe');
+        const user = tg.initDataUnsafe?.user;
+        console.log('Данные из tg:', user);
+        if (user) {
+            userId = user.id;
+            nickname = user.first_name || user.username || 'Нет никнейма';
+
+            // Загружаем баланс из базы
+            try {
+                const response = await supabaseClient
+                    .from('users')
+                    .select('balance')
+                    .eq('id', userId)
+                    .single();
+
+                if (!response.error && response.data) {
+                    balance = response.data.balance || 0;
+                } else {
                     balance = 0;
                 }
-            } else {
-                // Нет данных ниоткуда
-                console.log('Нет данных ниоткуда');
-                document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
-                document.querySelector('#username div:nth-child(2)').textContent = '';
-                document.querySelector('#id div:nth-child(2)').textContent = '';
-                document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
-                return;
+            } catch (e) {
+                console.error('Ошибка при загрузке баланса:', e);
+                balance = 0;
             }
+        } else {
+            // Нет данных ниоткуда
+            document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
+            document.querySelector('#username div:nth-child(2)').textContent = '';
+            document.querySelector('#id div:nth-child(2)').textContent = '';
+            document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
+            return;
         }
-    
-        console.log('Итоговые данные:', { userId, nickname, balance });
-    
-        // Обновляем DOM
-        document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
-        document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
-        document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
-        document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
     }
-    
-    // Запускаем после полной загрузки DOM
-    window.addEventListener('DOMContentLoaded', loadProfile);
-    
-    // Запрет зума
-    window.addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
-    window.addEventListener("keydown", e => { if (e.ctrlKey) e.preventDefault(); });
+
+    console.log('Обработка данных:', { userId, nickname, balance });
+    // Обновляем DOM
+    document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
+    document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
+    document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
+    document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
+}
+
+// Запуск при загрузке
+window.addEventListener('DOMContentLoaded', loadProfile);
+
+// Запрет зума
+window.addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+window.addEventListener("keydown", e => { if (e.ctrlKey) e.preventDefault(); });
 </script>
 </body>
 </html>
