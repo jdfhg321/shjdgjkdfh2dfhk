@@ -127,51 +127,49 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 
 async function loadProfile() {
-    // Получаем данные пользователя из tg.initDataUnsafe
-    const user = tg.initDataUnsafe?.user;
-    if (!user) {
-        // Нет данных - показываем дефолт
-        document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
-        document.querySelector('#username div:nth-child(2)').textContent = '';
-        document.querySelector('#id div:nth-child(2)').textContent = '';
-        document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
-        return;
+    // Сначала пытаемся получить параметры из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get('id');
+    let nickname = urlParams.get('nickname');
+    let balance = urlParams.get('balance');
+    
+    // Если параметры не переданы, пробуем получить из tg.initDataUnsafe
+    if (!userId) {
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            userId = user.id;
+            nickname = user.first_name || user.username || 'Нет никнейма';
+            // Если ID есть, а баланса нет, загружаем баланс из базы
+            const response = await supabaseClient
+                .from('users')
+                .select('balance')
+                .eq('id', userId)
+                .single();
+            
+            if (!response.error && response.data) {
+                balance = response.data.balance || 0;
+            } else {
+                balance = 0;
+            }
+        } else {
+            // Нет данных ниоткуда - показываем дефолт
+            document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
+            document.querySelector('#username div:nth-child(2)').textContent = '';
+            document.querySelector('#id div:nth-child(2)').textContent = '';
+            document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
+            return;
+        }
     }
-
-    // Ищем пользователя в базе по user.id
-    const response = await supabaseClient
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-    if (response.error) {
-        console.error('Ошибка загрузки:', response.error);
-        // Если ошибка — показываем информацию из tg.initDataUnsafe
-        document.querySelector('#nickname div:nth-child(2)').textContent = user.first_name || 'Нет ника';
-        document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
-        document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + user.id;
-        document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
-    } else {
-        const data = response.data;
-        const bal = data.balance !== undefined ? data.balance : 0;
-        document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + bal + '₽</span>';
-
-        // Можно обновлять никнейм из tg или базы, тут берем из tg
-        document.querySelector('#nickname div:nth-child(2)').textContent = user.first_name || 'Нет ника';
-        document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
-        document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + user.id;
-    }
+    
+    // Отображаем полученные данные
+    document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
+    document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
+    document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
+    document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
 }
 
 // Запускаем функцию
 loadProfile();
-
-// Обработчик кнопки профиля
-document.getElementById('profileButton').onclick = () => {
-    // Можно оставить так, или делать переход на другую страницу
-    window.location.href = 'https://jdfhg321.github.io/dfghbdjkg/';
-};
 
 // Запрет зума
 window.addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
