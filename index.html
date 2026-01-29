@@ -126,19 +126,17 @@ body {
 <script>
 const SUPABASE_URL = 'https://vpfomvsrkxykobiziqmc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZm9tdnNya3h5a29iaXppcW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NzQ1ODUsImV4cCI6MjA4NDM1MDU4NX0.7bey1hQpATp9e6jxAf7qMUwM9blpTsg_hyDT94qoQLk';
-
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 const tg = window.Telegram.WebApp;
 
 async function loadProfile() {
-    console.log('Начинаем загрузку профиля');
     const urlParams = new URLSearchParams(window.location.search);
     let userId = urlParams.get('id');
     let nickname = urlParams.get('nickname');
     let balance = urlParams.get('balance');
 
-    // Если нет id в URL, берем из tg.initDataUnsafe
+    // Если нет параметров, берем из tg.initDataUnsafe
     if (!userId && tg.initDataUnsafe?.user) {
         userId = tg.initDataUnsafe.user.id;
         nickname = tg.initDataUnsafe.user.first_name || 'Нет никнейма';
@@ -169,12 +167,9 @@ async function loadProfile() {
     document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
 }
 
-// Запуск при загрузке
-window.addEventListener('DOMContentLoaded', loadProfile);
+// Запускаем сразу
+loadProfile();
 
-// Запрет зума
-window.addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
-window.addEventListener("keydown", e => { if (e.ctrlKey) e.preventDefault(); });
 </script>
 </body>
 </html>
