@@ -133,51 +133,35 @@ const tg = window.Telegram.WebApp;
 
 async function loadProfile() {
     console.log('Начинаем загрузку профиля');
-    // Получение параметров из URL
     const urlParams = new URLSearchParams(window.location.search);
     let userId = urlParams.get('id');
     let nickname = urlParams.get('nickname');
     let balance = urlParams.get('balance');
 
-    console.log('Параметры из URL:', { userId, nickname, balance });
+    // Если нет id в URL, берем из tg.initDataUnsafe
+    if (!userId && tg.initDataUnsafe?.user) {
+        userId = tg.initDataUnsafe.user.id;
+        nickname = tg.initDataUnsafe.user.first_name || 'Нет никнейма';
 
-    // Если нет userId, берем из tg.initDataUnsafe
-    if (!userId) {
-        console.log('Параметры из URL не получены, проверяем tg.initDataUnsafe');
-        const user = tg.initDataUnsafe?.user;
-        console.log('Данные из tg:', user);
-        if (user) {
-            userId = user.id;
-            nickname = user.first_name || user.username || 'Нет никнейма';
+        // Загружаем баланс из базы
+        try {
+            const response = await supabaseClient
+                .from('users')
+                .select('balance')
+                .eq('id', userId)
+                .single();
 
-            // Загружаем баланс из базы
-            try {
-                const response = await supabaseClient
-                    .from('users')
-                    .select('balance')
-                    .eq('id', userId)
-                    .single();
-
-                if (!response.error && response.data) {
-                    balance = response.data.balance || 0;
-                } else {
-                    balance = 0;
-                }
-            } catch (e) {
-                console.error('Ошибка при загрузке баланса:', e);
+            if (!response.error && response.data) {
+                balance = response.data.balance || 0;
+            } else {
                 balance = 0;
             }
-        } else {
-            // Нет данных ниоткуда
-            document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет данных';
-            document.querySelector('#username div:nth-child(2)').textContent = '';
-            document.querySelector('#id div:nth-child(2)').textContent = '';
-            document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: 0₽';
-            return;
+        } catch (e) {
+            console.error('Ошибка при загрузке баланса:', e);
+            balance = 0;
         }
     }
 
-    console.log('Обработка данных:', { userId, nickname, balance });
     // Обновляем DOM
     document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
     document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
