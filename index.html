@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Профиль с балансом денег</title>
 <style>
-/* Ваш CSS, как ранее */
 body {
     margin: 0;
     padding: 20px;
@@ -68,7 +67,6 @@ body {
     max-width: 400px;
     width: 90%;
     text-align: center;
-    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
 }
 .balance-value {
     font-size: 24px;
@@ -132,44 +130,40 @@ const tg = window.Telegram.WebApp;
 
 async function loadProfile() {
     const urlParams = new URLSearchParams(window.location.search);
-    let userId = urlParams.get('id');
-    let nickname = urlParams.get('nickname');
-    let balance = urlParams.get('balance');
+    let tg_id = urlParams.get('tg_id');
 
-    // Если нет параметров, берем из tg.initDataUnsafe
-    if (!userId && tg.initDataUnsafe?.user) {
-        userId = tg.initDataUnsafe.user.id;
-        nickname = tg.initDataUnsafe.user.first_name || 'Нет никнейма';
+    // Если tg_id не передан, попробуем взять из tg.initDataUnsafe
+    if (!tg_id && tg.initDataUnsafe?.user) {
+        tg_id = tg.initDataUnsafe.user.id;
+    }
 
+    if (tg_id) {
+        // Обновляем DOM
+        document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + tg_id;
         // Загружаем баланс из базы
         try {
             const response = await supabaseClient
                 .from('users')
                 .select('balance')
-                .eq('id', userId)
+                .eq('id', tg_id)
                 .single();
 
             if (!response.error && response.data) {
-                balance = response.data.balance || 0;
+                document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + response.data.balance + '₽</span>';
             } else {
-                balance = 0;
+                document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">0₽</span>';
             }
         } catch (e) {
             console.error('Ошибка при загрузке баланса:', e);
-            balance = 0;
+            document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">0₽</span>';
         }
+    } else {
+        alert("Ошибка: не найден TG ID");
     }
-
-    // Обновляем DOM
-    document.querySelector('#nickname div:nth-child(2)').textContent = nickname || 'Нет никнейма';
-    document.querySelector('#username div:nth-child(2)').textContent = '@N/A';
-    document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
-    document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
 }
 
-// Запускаем сразу
+// Автоматически вызываем
 loadProfile();
-
 </script>
 </body>
 </html>
