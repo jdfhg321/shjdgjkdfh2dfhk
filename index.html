@@ -118,52 +118,29 @@ body {
 
 <a href="https://jdfhg321.github.io/gfdjfgk/" class="back-button">🔙 Назад</a>
 
-<!-- Скрипты -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-const SUPABASE_URL = 'https://vpfomvsrkxykobiziqmc.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZm9tdnNya3h5a29iaXppcW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NzQ1ODUsImV4cCI6MjA4NDM1MDU4NX0.7bey1hQpATp9e6jxAf7qMUwM9blpTsg_hyDT94qoQLk';
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-const tg = window.Telegram.WebApp;
+const params = new URLSearchParams(window.location.search);
+const userId = params.get('id');
+const nickname = params.get('nickname');
+const balance = params.get('balance');
 
-async function loadProfile() {
-    const urlParams = new URLSearchParams(window.location.search);
-    let tg_id = urlParams.get('tg_id');
-
-    // Если tg_id не передан, попробуем взять из tg.initDataUnsafe
-    if (!tg_id && tg.initDataUnsafe?.user) {
-        tg_id = tg.initDataUnsafe.user.id;
-    }
-
-    if (tg_id) {
-        // Обновляем DOM
-        document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + tg_id;
-        // Загружаем баланс из базы
-        try {
-            const response = await supabaseClient
-                .from('users')
-                .select('balance')
-                .eq('id', tg_id)
-                .single();
-
-            if (!response.error && response.data) {
-                document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + response.data.balance + '₽</span>';
-            } else {
-                document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">0₽</span>';
-            }
-        } catch (e) {
-            console.error('Ошибка при загрузке баланса:', e);
-            document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">0₽</span>';
-        }
-    } else {
-        alert("Ошибка: не найден TG ID");
-    }
+if (userId) {
+    document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: ' + userId;
+} else {
+    document.querySelector('#id div:nth-child(2)').textContent = 'ID TG: не указан';
 }
 
-// Автоматически вызываем
-loadProfile();
+if (nickname) {
+    document.querySelector('#nickname div:nth-child(2)').textContent = nickname;
+} else {
+    document.querySelector('#nickname div:nth-child(2)').textContent = 'Нет никнейма';
+}
+
+if (balance !== null) {
+    document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">' + balance + '₽</span>';
+} else {
+    document.getElementById('balance-display').innerHTML = '💰 Ваш баланс: <span style="font-size:24px;">0₽</span>';
+}
 </script>
 </body>
 </html>
